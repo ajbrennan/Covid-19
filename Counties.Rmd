@@ -1,0 +1,99 @@
+```{r}
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(viridis)
+sraw <- read.csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv"), header = TRUE)
+craw <- read.csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"), header = TRUE)
+demo <- read.csv("./Population.csv", header = TRUE)
+demo <- demo[c(1:55),]
+Dates <- unique(sraw$date)
+States <- unique(sraw$state)
+```
+
+
+```{r}
+county.cases <- select(craw, date, county, cases)
+county.cases$days <- 0
+county.cases <- county.cases[c(4,1:3)]
+county.cases$new <- 0
+county.cases <- merge(county.cases, demo, by = "county", all = T)
+county.cases$per100k <- county.cases$cases/county.cases$pop*100000
+county.cases <- arrange(county.cases, date)
+county.cases <- filter(county.cases, county != "Guam", county != "Virgin Islands", county != "Northern Mariana Islands")
+Dates <- unique(county.cases$date)
+countys <- unique(county.cases$county)
+
+test <- filter(county.cases, county == counties[1])
+for(i in c(2:nrow(test))){
+  test$new[i] <- test$cases[i] - test$cases[i-1]
+}
+for(i in c(2:length(countys))){
+  temp <- filter(county.cases, county == counties[i])
+  for(i in c(2:nrow(temp))){
+    temp$new[i] <- temp$cases[i] - temp$cases[i-1]
+  }
+  test <- rbind(test, temp)
+}
+county.cases0 <- test
+
+
+county.cases50 <- county.cases %>%
+  filter(cases >= 50)
+
+test <- filter(county.cases50, county == counties[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(counties))){
+  temp <- filter(county.cases50, county == counties[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+county.cases50 <- test
+
+
+county.cases100 <- county.cases %>%
+  filter(cases >= 100)
+
+test <- filter(county.cases100, county == counties[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(counties))){
+  temp <- filter(county.cases100, county == counties[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+county.cases100 <- test
+
+
+county.cases.25k <- county.cases %>%
+  filter(per100k >= .25)
+
+test <- filter(county.cases.25k, county == counties[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(counties))){
+  temp <- filter(county.cases.25k, county == counties[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+county.cases.25k <- test
+
+
+county.cases.75k <- county.cases %>%
+  filter(per100k >= .75)
+
+test <- filter(county.cases.75k, county == counties[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(counties))){
+  temp <- filter(county.cases.75k, county == counties[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+county.cases.75k <- test
+```

@@ -1,0 +1,225 @@
+```{r}
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(viridis)
+sraw <- read.csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv"), header = TRUE)
+craw <- read.csv(url("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv"), header = TRUE)
+demo <- read.csv("./Population.csv", header = TRUE)
+demo <- demo[c(1:55),]
+Dates <- unique(sraw$date)
+States <- unique(sraw$state)
+```
+
+
+```{r}
+state.cases <- select(sraw, date, state, cases)
+state.cases$days <- 0
+state.cases <- state.cases[c(4,1:3)]
+state.cases$new <- 0
+state.cases <- merge(state.cases, demo, by = "state", all = T)
+state.cases$per100k <- state.cases$cases/state.cases$pop*100000
+state.cases <- arrange(state.cases, date)
+state.cases <- filter(state.cases, state != "Guam", state != "Virgin Islands", state != "Northern Mariana Islands")
+Dates <- unique(state.cases$date)
+States <- unique(state.cases$state)
+
+test <- filter(state.cases, state == States[1])
+for(i in c(2:nrow(test))){
+  test$new[i] <- test$cases[i] - test$cases[i-1]
+}
+for(i in c(2:length(States))){
+  temp <- filter(state.cases, state == States[i])
+  for(i in c(2:nrow(temp))){
+    temp$new[i] <- temp$cases[i] - temp$cases[i-1]
+  }
+  test <- rbind(test, temp)
+}
+state.cases0 <- test
+
+
+state.cases50 <- state.cases %>%
+  filter(cases >= 50)
+
+test <- filter(state.cases50, state == States[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(States))){
+  temp <- filter(state.cases50, state == States[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+state.cases50 <- test
+
+
+state.cases100 <- state.cases %>%
+  filter(cases >= 100)
+
+test <- filter(state.cases100, state == States[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(States))){
+  temp <- filter(state.cases100, state == States[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+state.cases100 <- test
+
+
+state.cases.25k <- state.cases %>%
+  filter(per100k >= .25)
+
+test <- filter(state.cases.25k, state == States[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(States))){
+  temp <- filter(state.cases.25k, state == States[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+state.cases.25k <- test
+
+
+state.cases.75k <- state.cases %>%
+  filter(per100k >= .75)
+
+test <- filter(state.cases.75k, state == States[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(States))){
+  temp <- filter(state.cases.75k, state == States[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+state.cases.75k <- test
+```
+
+```{r}
+state.cases.75k %>%
+  #filter(density < 100 | density > 300) %>%
+  #filter(urban < .6 | urban > .9) %>%
+  #filter(median.age < 35 | median.age > 40) %>%
+  mutate(dummy = as.numeric(median.age < 40)) %>%
+  ggplot( aes(x=days, y=per100k, group=state, color=dummy)) +
+  geom_line() + 
+  theme(legend.position = "none") +
+  scale_y_log10()
+
+state.cases100 %>%
+  #filter(density < 100 | density > 300) %>%
+  mutate(dummy = as.numeric(density < 100)) %>%
+  ggplot( aes(x=days, y=per100k, group=state, color=state)) +
+  geom_line() + 
+  theme(legend.position = "none") +
+  scale_y_log10()
+
+state.cases %>%
+  ggplot( aes(x=days, y=new, group=state, color=state)) +
+  geom_line() + 
+  theme(legend.position = "none")
+```
+
+
+
+
+
+
+
+```{r}
+state.deaths <- select(sraw, date, state, deaths)
+state.deaths$days <- 0
+state.deaths <- state.deaths[c(4,1:3)]
+state.deaths$new <- 0
+state.deaths <- merge(state.deaths, demo, by = "state", all = T)
+state.deaths$per100k <- state.deaths$deaths/state.deaths$pop*100000
+state.deaths <- arrange(state.deaths, date)
+state.deaths <- filter(state.deaths, state != "Guam", state != "Virgin Islands", state != "Northern Mariana Islands")
+Dates <- unique(state.deaths$date)
+States <- unique(state.deaths$state)
+
+test <- filter(state.deaths, state == States[1])
+for(i in c(2:nrow(test))){
+  test$new[i] <- test$deaths[i] - test$deaths[i-1]
+}
+for(i in c(2:length(States))){
+  temp <- filter(state.deaths, state == States[i])
+  for(i in c(2:nrow(temp))){
+    temp$new[i] <- temp$deaths[i] - temp$deaths[i-1]
+  }
+  test <- rbind(test, temp)
+}
+state.deaths <- test
+
+test <- filter(state.deaths, state == States[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(States))){
+  temp <- filter(state.deaths, state == States[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+state.deaths0 <- test
+
+
+state.deaths1 <- state.deaths %>%
+  filter(deaths >= 1)
+
+test <- filter(state.deaths1, state == States[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(States))){
+  temp <- filter(state.deaths1, state == States[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+state.deaths1 <- test
+
+
+state.deaths.15k <- state.deaths %>%
+  filter(per100k >= .15)
+
+test <- filter(state.deaths.15k, state == States[1])
+test$days <- c(0:(nrow(test)-1))
+for(i in c(2:length(States))){
+  temp <- filter(state.deaths.15k, state == States[i])
+  if(nrow(temp) > 0){
+    temp$days <- c(0:(nrow(temp)-1))
+    test <- rbind(test, temp)
+  }
+}
+state.deaths.15k <- test
+```
+
+```{r}
+state.deaths1 %>%
+  mutate(dummy = as.numeric(density < 300)) %>%
+  ggplot( aes(x=days, y=deaths, group=state, color=dummy)) +
+  geom_line() + 
+  theme(legend.position = "none") +
+  #scale_color_viridis(option = "D") +
+  scale_y_log10()
+```
+```{r}
+state.deaths.15k %>%
+  #filter(density < 100 | density > 300) %>%
+  #filter(urban < .6 | urban > .9) %>%
+  filter(median.age < 37 | median.age > 40) %>%
+  mutate(dummy = as.numeric(median.age < 40)) %>%
+  ggplot( aes(x=days, y=per100k, group=state, color=dummy)) +
+  geom_line() + 
+  theme(legend.position = "none") +
+  #scale_color_viridis(option = "D") +
+  scale_y_log10()
+```
+```{r}
+state.deaths %>%
+  ggplot( aes(x=days, y=new, group=state, color=state)) +
+  geom_line() + 
+  theme(legend.position = "none")
+```
